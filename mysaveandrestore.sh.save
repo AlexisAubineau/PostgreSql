@@ -1,0 +1,66 @@
+#!/bin/sh
+PATH=/bin:/usr/bin:/usr/local/bin
+date=$(date +%d-%m-%Y-%H)
+dump="/usr/bin/mysqldump"
+log="/var/log/backupdb.log"
+sql="/usr/bin/mysql"
+dest="/"
+
+echo "Entrez votre nom d'utilisateur de base de donnée"
+read user
+echo "Entrez votre mot de passe de base de donnée"
+read pw
+
+make_save(){
+	${dump} -A -u${user} -p${pw} > ${dest}/databases.sql
+	cd ~/Documents
+	tar -cvf databases-${date}.tar databases.sql
+	chmod 600 databases-${date}.tar
+	rm -f databases.sql
+	exit 0
+}
+
+last_save_rest() {
+
+	echo
+	echo "Restauration de la dernière sauvegarde...en cours..."
+	sleep 2
+
+	cd ${dest}
+	tar -xvf databases-${date}.tar
+	${sql} -u${user} -p${pw} < databases.sql
+	rm -f databases.sql
+
+	echo
+	echo "Dernière base de donnée restaurée avec succès"
+	sleep 2
+	exit 0
+}
+
+save_onedate_rest(){
+	echo "Entrée le nom de votre .tar de sauvegarde "
+	read input
+	tar -xvf ${input}
+	${sql} -u${user} -p${pw} < databases.sql
+	rm -f databases.sql
+	exit 0
+}
+echo "Tapez 1 pour sauvegarder votre base de donnée mysql \nTapez 2 pour restaurer la dernière sauvegardes éffectuée \nTapez 3 pour restaurer une sauvegarde spécifique"
+read input
+if [ ${input} = '1' ]
+then
+	make_save
+
+elif [ ${input} = '2' ]
+then
+	last_save_rest
+
+elif [ ${input} = '3' ]
+then
+	save_onedate_rest
+
+
+else
+	echo "Erreur"
+	exit 1
+fi
